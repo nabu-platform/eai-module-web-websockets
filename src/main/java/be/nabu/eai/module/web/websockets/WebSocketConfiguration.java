@@ -4,14 +4,15 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlType;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
+import be.nabu.eai.api.InterfaceFilter;
 import be.nabu.eai.repository.jaxb.ArtifactXMLAdapter;
 import be.nabu.libs.services.api.DefinedService;
 
 @XmlRootElement(name = "websocketProvider")
-@XmlType(propOrder = {"serverPath", "service"})
+@XmlType(propOrder = {"serverPath", "messageService", "connectService", "disconnectService"})
 public class WebSocketConfiguration {
 	private String serverPath;
-	private DefinedService service;
+	private DefinedService messageService, connectService, disconnectService;
 	
 	public String getServerPath() {
 		return serverPath;
@@ -21,10 +22,30 @@ public class WebSocketConfiguration {
 	}
 	
 	@XmlJavaTypeAdapter(value = ArtifactXMLAdapter.class)
-	public DefinedService getService() {
-		return service;
+	public DefinedService getMessageService() {
+		return messageService;
 	}
-	public void setService(DefinedService service) {
-		this.service = service;
+	public void setMessageService(DefinedService messageService) {
+		this.messageService = messageService;
 	}
+	
+	@XmlJavaTypeAdapter(value = ArtifactXMLAdapter.class)
+	@InterfaceFilter(implement = "be.nabu.eai.module.web.websockets.api.WebSocketConnectionListener.connected")
+	public DefinedService getConnectService() {
+		return connectService;
+	}
+	public void setConnectService(DefinedService connectService) {
+		this.connectService = connectService;
+	}
+	
+	@XmlJavaTypeAdapter(value = ArtifactXMLAdapter.class)
+	@InterfaceFilter(implement = "be.nabu.eai.module.web.websockets.api.WebSocketConnectionListener.disconnected")
+	public DefinedService getDisconnectService() {
+		return disconnectService;
+	}
+	public void setDisconnectService(DefinedService disconnectService) {
+		this.disconnectService = disconnectService;
+	}
+	
+	
 }

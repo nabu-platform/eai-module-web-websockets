@@ -36,7 +36,7 @@ public class WebSocketListener implements EventHandler<WebSocketRequest, WebSock
 	public WebSocketMessage handle(WebSocketRequest event) {
 		// we try to parse the incoming request
 		try {
-			ComplexType input = provider.getConfiguration().getService().getServiceInterface().getInputDefinition();
+			ComplexType input = provider.getConfiguration().getMessageService().getServiceInterface().getInputDefinition();
 			ComplexContent content = null;
 			for (Element<?> child : input) {
 				if (child.getType() instanceof ComplexType) {
@@ -60,7 +60,7 @@ public class WebSocketListener implements EventHandler<WebSocketRequest, WebSock
 			}
 			Token token = WebSocketUtils.getToken(WebSocketUtils.getPipeline());
 			Future<ServiceResult> run = provider.getRepository().getServiceRunner().run(
-				provider.getConfiguration().getService(), 
+				provider.getConfiguration().getMessageService(), 
 				provider.getRepository().newExecutionContext(token), 
 				content 
 			);
