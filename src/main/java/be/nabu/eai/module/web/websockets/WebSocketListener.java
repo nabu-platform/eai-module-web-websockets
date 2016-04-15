@@ -42,7 +42,10 @@ public class WebSocketListener implements EventHandler<WebSocketRequest, WebSock
 				if (child.getType() instanceof ComplexType) {
 					JSONBinding binding = new JSONBinding((ComplexType) child.getType());
 					try {
-						content = binding.unmarshal(event.getData(), new Window[0]);
+						ComplexContent childContent = binding.unmarshal(event.getData(), new Window[0]);
+						content = input.newInstance();
+						content.set(child.getName(), childContent);
+						break;
 					}
 					catch (IOException e) {
 						continue;
