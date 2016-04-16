@@ -103,7 +103,12 @@ public class WebSocketProvider extends JAXBArtifact<WebSocketConfiguration> impl
 									// upgraded means we have an active websocket connection
 									if (ConnectionEvent.ConnectionState.UPGRADED.equals(event.getState()) && getConfiguration().getConnectService() != null) {
 										Token token = WebSocketUtils.getToken((StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage>) event.getPipeline());
-										connectionListener.connected(application.getId(), pathToListen, token, host, port);
+										try {
+											connectionListener.connected(application.getId(), pathToListen, token, host, port);
+										}
+										catch (Exception e) {
+											event.getPipeline().close();
+										}
 									}
 									// someone disconnected
 									else if (ConnectionEvent.ConnectionState.CLOSED.equals(event.getState()) && getConfiguration().getDisconnectService() != null) {
