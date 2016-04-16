@@ -2,6 +2,7 @@ package be.nabu.eai.module.web.websockets;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.text.ParseException;
@@ -19,6 +20,7 @@ import be.nabu.libs.services.api.ServiceResult;
 import be.nabu.libs.types.api.ComplexContent;
 import be.nabu.libs.types.api.ComplexType;
 import be.nabu.libs.types.api.Element;
+import be.nabu.libs.types.api.SimpleType;
 import be.nabu.libs.types.binding.api.Window;
 import be.nabu.libs.types.binding.json.JSONBinding;
 import be.nabu.utils.io.IOUtils;
@@ -48,16 +50,6 @@ public class WebSocketListener implements EventHandler<WebSocketRequest, WebSock
 						ComplexContent childContent = binding.unmarshal(event.getData(), new Window[0]);
 						content = input.newInstance();
 						content.set(child.getName(), childContent);
-						// fill in the default fields
-						StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage> pipeline = WebSocketUtils.getPipeline();
-						if (pipeline != null) {
-							SocketAddress remoteSocketAddress = WebSocketUtils.getPipeline().getSourceContext().getSocket().getRemoteSocketAddress();
-							content.set("host", remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getHostString() : null);
-							content.set("port", remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getPort() : 0);
-							content.set("token", WebSocketUtils.getToken(pipeline));
-							content.set("webApplicationId", application.getId());
-							content.set("path", path);
-						}
 						break;
 					}
 					catch (IOException e) {
@@ -67,9 +59,31 @@ public class WebSocketListener implements EventHandler<WebSocketRequest, WebSock
 						continue;
 					}
 				}
+				else if (child.getType() instanceof SimpleType && ((SimpleType<?>) child.getType()).getInstanceClass().equals(byte[].class)) {
+					content = input.newInstance();
+					content.set(child.getName(), IOUtils.toBytes(IOUtils.wrap(event.getData())));
+					break;
+				}
+				else if (child.getType() instanceof SimpleType && ((SimpleType<?>) child.getType()).getInstanceClass().equals(InputStream.class)) {
+					content = input.newInstance();
+					content.set(child.getName(), event.getData());
+					break;
+				}
 			}
 			if (content == null) {
 				throw new RuntimeException("Could not unmarshal the incoming data");
+			}
+			// fill in the default fields
+			else {
+				StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage> pipeline = WebSocketUtils.getPipeline();
+				if (pipeline != null) {
+					SocketAddress remoteSocketAddress = WebSocketUtils.getPipeline().getSourceContext().getSocket().getRemoteSocketAddress();
+					content.set("host", remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getHostString() : null);
+					content.set("port", remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getPort() : 0);
+					content.set("token", WebSocketUtils.getToken(pipeline));
+					content.set("webApplicationId", application.getId());
+					content.set("path", path);
+				}
 			}
 			Token token = WebSocketUtils.getToken(WebSocketUtils.getPipeline());
 			Future<ServiceResult> run = provider.getRepository().getServiceRunner().run(

@@ -2,6 +2,7 @@ package nabu.protocols.websockets.provider;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
 import javax.jws.WebParam;
@@ -63,11 +64,19 @@ public class Services {
 				}
 			}
 			if (bytes == null) {
-				ComplexContent complexContent = content instanceof ComplexContent ? (ComplexContent) content : ComplexContentWrapperFactory.getInstance().getWrapper().wrap(content);
-				JSONBinding binding = new JSONBinding(complexContent.getType());
-				ByteArrayOutputStream output = new ByteArrayOutputStream();
-				binding.marshal(output, complexContent);
-				bytes = output.toByteArray();
+				if (content instanceof byte[]) {
+					bytes = (byte[]) content;
+				}
+				else if (content instanceof InputStream) {
+					bytes = IOUtils.toBytes(IOUtils.wrap((InputStream) content));
+				}
+				else {
+					ComplexContent complexContent = content instanceof ComplexContent ? (ComplexContent) content : ComplexContentWrapperFactory.getInstance().getWrapper().wrap(content);
+					JSONBinding binding = new JSONBinding(complexContent.getType());
+					ByteArrayOutputStream output = new ByteArrayOutputStream();
+					binding.marshal(output, complexContent);
+					bytes = output.toByteArray();
+				}
 			}
 			pipeline.getResponseQueue().add(
 				WebSocketUtils.newMessage(OpCode.TEXT, true, bytes.length, IOUtils.wrap(bytes, true))	
