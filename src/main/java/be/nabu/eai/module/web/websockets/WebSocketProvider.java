@@ -1,6 +1,8 @@
 package be.nabu.eai.module.web.websockets;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -95,15 +97,18 @@ public class WebSocketProvider extends JAXBArtifact<WebSocketConfiguration> impl
 							WebSocketRequestParserFactory parserFactory = WebSocketUtils.getParserFactory(event.getPipeline());
 							if (parserFactory != null) {
 								if (parserFactory.getPath().equals(pathToListen)) {
+									SocketAddress remoteSocketAddress = event.getPipeline().getSourceContext().getSocket().getRemoteSocketAddress();
+									String host = remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getHostString() : null;
+									int port = remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getPort() : 0;
 									// upgraded means we have an active websocket connection
 									if (ConnectionEvent.ConnectionState.UPGRADED.equals(event.getState()) && getConfiguration().getConnectService() != null) {
 										Token token = WebSocketUtils.getToken((StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage>) event.getPipeline());
-										connectionListener.connected(application.getId(), pathToListen, token);
+										connectionListener.connected(application.getId(), pathToListen, token, host, port);
 									}
 									// someone disconnected
 									else if (ConnectionEvent.ConnectionState.CLOSED.equals(event.getState()) && getConfiguration().getDisconnectService() != null) {
 										Token token = WebSocketUtils.getToken((StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage>) event.getPipeline());
-										connectionListener.disconnected(application.getId(), pathToListen, token);
+										connectionListener.disconnected(application.getId(), pathToListen, token, host, port);
 									}
 								}
 							}

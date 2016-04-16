@@ -22,6 +22,7 @@ public class WebSocketConfiguration {
 	}
 	
 	@XmlJavaTypeAdapter(value = ArtifactXMLAdapter.class)
+	@InterfaceFilter(implement = "be.nabu.eai.module.web.websockets.api.WebSocketConnectionListener.message")
 	public DefinedService getMessageService() {
 		return messageService;
 	}
