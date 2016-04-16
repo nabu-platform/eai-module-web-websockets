@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.jws.WebParam;
+import javax.jws.WebResult;
 import javax.jws.WebService;
 import javax.validation.constraints.NotNull;
 
@@ -111,6 +112,7 @@ public class Services {
 		}
 	}
 	
+	@WebResult(name = "clients")
 	public List<WebSocketClient> clients(@WebParam(name = "webApplicationId") @NotNull String webApplicationId, @WebParam(name = "path") String path) throws IOException {
 		WebApplication artifact = executionContext.getServiceContext().getResolver(WebApplication.class).resolve(webApplicationId);
 		List<WebSocketClient> clients = new ArrayList<WebSocketClient>();
