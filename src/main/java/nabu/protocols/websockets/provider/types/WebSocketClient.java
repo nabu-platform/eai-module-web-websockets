@@ -1,24 +1,28 @@
 package nabu.protocols.websockets.provider.types;
 
+import java.util.Date;
+
 import javax.validation.constraints.NotNull;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import be.nabu.libs.authentication.api.Token;
 
 @XmlRootElement
-public class WebSocketClient {
+public class WebSocketClient implements Comparable<WebSocketClient> {
 	private String host;
 	private Integer port;
 	private Token token;
+	private Date created;
 	
 	public WebSocketClient() {
 		// auto construct
 	}
 	
-	public WebSocketClient(String host, Integer port, Token token) {
+	public WebSocketClient(String host, Integer port, Token token, Date created) {
 		this.host = host;
 		this.port = port;
 		this.token = token;
+		this.created = created;
 	}
 
 	@NotNull
@@ -43,5 +47,29 @@ public class WebSocketClient {
 	public void setToken(Token token) {
 		this.token = token;
 	}
-	
+
+	@NotNull
+	public Date getCreated() {
+		return created;
+	}
+	public void setCreated(Date created) {
+		this.created = created;
+	}
+
+	@Override
+	public int compareTo(WebSocketClient o) {
+		if (created == null && o.created == null) {
+			return 0;
+		}
+		else if (created == null) {
+			return -1;
+		}
+		else if (o.created == null) {
+			return 1;
+		}
+		else {
+			return created.compareTo(o.created);
+		}
+	}
+
 }

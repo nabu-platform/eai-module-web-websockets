@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import javax.jws.WebParam;
@@ -123,8 +124,10 @@ public class Services {
 			SocketAddress remoteSocketAddress = pipeline.getSourceContext().getSocket().getRemoteSocketAddress();
 			client.setHost(remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getHostString() : null);
 			client.setPort(remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getPort() : 0);
+			client.setCreated(pipeline.getSourceContext().getCreated());
 			clients.add(client);
 		}
+		Collections.sort(clients);
 		return clients;
 	}
 	
