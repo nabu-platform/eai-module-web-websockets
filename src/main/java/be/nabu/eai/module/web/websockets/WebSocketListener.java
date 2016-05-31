@@ -6,11 +6,15 @@ import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Future;
 
 import be.nabu.eai.module.web.application.WebApplication;
 import be.nabu.libs.authentication.api.Token;
 import be.nabu.libs.events.api.EventHandler;
+import be.nabu.libs.http.glue.GlueListener.PathAnalysis;
 import be.nabu.libs.http.server.websockets.WebSocketUtils;
 import be.nabu.libs.http.server.websockets.api.OpCode;
 import be.nabu.libs.http.server.websockets.api.WebSocketMessage;
@@ -20,20 +24,22 @@ import be.nabu.libs.services.api.ServiceResult;
 import be.nabu.libs.types.api.ComplexContent;
 import be.nabu.libs.types.api.ComplexType;
 import be.nabu.libs.types.api.Element;
+import be.nabu.libs.types.api.KeyValuePair;
 import be.nabu.libs.types.api.SimpleType;
 import be.nabu.libs.types.binding.api.Window;
 import be.nabu.libs.types.binding.json.JSONBinding;
+import be.nabu.libs.types.utils.KeyValuePairImpl;
 import be.nabu.utils.io.IOUtils;
 
 public class WebSocketListener implements EventHandler<WebSocketRequest, WebSocketMessage> {
 
 	private WebApplication application;
-	private String path;
 	private WebSocketProvider provider;
+	private PathAnalysis analysis;
 
-	public WebSocketListener(WebApplication application, String path, WebSocketProvider provider) {
+	public WebSocketListener(WebApplication application, PathAnalysis analysis, WebSocketProvider provider) {
 		this.application = application;
-		this.path = path;
+		this.analysis = analysis;
 		this.provider = provider;
 	}
 
@@ -82,7 +88,15 @@ public class WebSocketListener implements EventHandler<WebSocketRequest, WebSock
 					content.set("port", remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getPort() : 0);
 					content.set("token", WebSocketUtils.getToken(pipeline));
 					content.set("webApplicationId", application.getId());
-					content.set("path", path);
+					content.set("path", event.getPath());
+					if (!analysis.getParameters().isEmpty()) {
+						Map<String, String> analyze = analysis.analyze(event.getPath());
+						List<KeyValuePair> values = new ArrayList<KeyValuePair>();
+						for (String key : analyze.keySet()) {
+							values.add(new KeyValuePairImpl(key, analyze.get(key)));
+						}
+						content.set("pathValues", values);
+					}
 				}
 			}
 			Token token = WebSocketUtils.getToken(WebSocketUtils.getPipeline());
@@ -113,10 +127,6 @@ public class WebSocketListener implements EventHandler<WebSocketRequest, WebSock
 
 	public WebApplication getApplication() {
 		return application;
-	}
-
-	public String getPath() {
-		return path;
 	}
 
 	public WebSocketProvider getProvider() {
