@@ -68,7 +68,7 @@ public class Services {
 					if (client.getToken() != null && !client.getToken().equals(token)) {
 						continue;
 					}
-					SocketAddress remoteSocketAddress = pipeline.getSourceContext().getSocket().getRemoteSocketAddress();
+					SocketAddress remoteSocketAddress = pipeline.getSourceContext().getSocketAddress();
 					String host = remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getHostString() : null;
 					int port = remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getPort() : 0;
 					if (client.getHost().equals(host) && client.getPort() == port) {
@@ -121,7 +121,7 @@ public class Services {
 		for (StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage> pipeline : WebSocketUtils.getWebsocketPipelines((NIOServer) server, path)) {
 			WebSocketClient client = new WebSocketClient();
 			client.setToken(WebSocketUtils.getToken(pipeline));
-			SocketAddress remoteSocketAddress = pipeline.getSourceContext().getSocket().getRemoteSocketAddress();
+			SocketAddress remoteSocketAddress = pipeline.getSourceContext().getSocketAddress();
 			client.setHost(remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getHostString() : null);
 			client.setPort(remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getPort() : 0);
 			client.setCreated(pipeline.getSourceContext().getCreated());

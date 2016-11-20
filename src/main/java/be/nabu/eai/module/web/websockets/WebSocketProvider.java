@@ -114,7 +114,7 @@ public class WebSocketProvider extends JAXBArtifact<WebSocketConfiguration> impl
 									for (String key : analyze.keySet()) {
 										values.add(new KeyValuePairImpl(key, analyze.get(key)));
 									}
-									SocketAddress remoteSocketAddress = event.getPipeline().getSourceContext().getSocket().getRemoteSocketAddress();
+									SocketAddress remoteSocketAddress = event.getPipeline().getSourceContext().getSocketAddress();
 									String host = remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getHostString() : null;
 									int port = remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getPort() : 0;
 									// upgraded means we have an active websocket connection

@@ -83,7 +83,7 @@ public class WebSocketListener implements EventHandler<WebSocketRequest, WebSock
 			else {
 				StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage> pipeline = WebSocketUtils.getPipeline();
 				if (pipeline != null) {
-					SocketAddress remoteSocketAddress = WebSocketUtils.getPipeline().getSourceContext().getSocket().getRemoteSocketAddress();
+					SocketAddress remoteSocketAddress = WebSocketUtils.getPipeline().getSourceContext().getSocketAddress();
 					content.set("host", remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getHostString() : null);
 					content.set("port", remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getPort() : 0);
 					content.set("token", WebSocketUtils.getToken(pipeline));
