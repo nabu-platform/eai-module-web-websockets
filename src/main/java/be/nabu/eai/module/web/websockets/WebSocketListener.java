@@ -36,11 +36,13 @@ public class WebSocketListener implements EventHandler<WebSocketRequest, WebSock
 	private WebApplication application;
 	private WebSocketProvider provider;
 	private PathAnalysis analysis;
+	private Object configuration;
 
-	public WebSocketListener(WebApplication application, PathAnalysis analysis, WebSocketProvider provider) {
+	public WebSocketListener(WebApplication application, PathAnalysis analysis, WebSocketProvider provider, Object configuration) {
 		this.application = application;
 		this.analysis = analysis;
 		this.provider = provider;
+		this.configuration = configuration;
 	}
 
 	@Override
@@ -89,6 +91,7 @@ public class WebSocketListener implements EventHandler<WebSocketRequest, WebSock
 					content.set("token", WebSocketUtils.getToken(pipeline));
 					content.set("webApplicationId", application.getId());
 					content.set("path", event.getPath());
+					content.set("configuration", configuration);
 					if (!analysis.getParameters().isEmpty()) {
 						Map<String, String> analyze = analysis.analyze(event.getPath());
 						List<KeyValuePair> values = new ArrayList<KeyValuePair>();

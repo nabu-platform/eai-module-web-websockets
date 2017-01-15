@@ -7,12 +7,14 @@ import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import be.nabu.eai.api.InterfaceFilter;
 import be.nabu.eai.repository.jaxb.ArtifactXMLAdapter;
 import be.nabu.libs.services.api.DefinedService;
+import be.nabu.libs.types.api.DefinedType;
 
 @XmlRootElement(name = "websocketProvider")
-@XmlType(propOrder = {"serverPath", "messageService", "connectService", "disconnectService"})
+@XmlType(propOrder = {"serverPath", "messageService", "connectService", "disconnectService", "configurationType" })
 public class WebSocketConfiguration {
 	private String serverPath;
 	private DefinedService messageService, connectService, disconnectService;
+	private DefinedType configurationType;
 	
 	public String getServerPath() {
 		return serverPath;
@@ -48,5 +50,11 @@ public class WebSocketConfiguration {
 		this.disconnectService = disconnectService;
 	}
 	
-	
+	@XmlJavaTypeAdapter(value = ArtifactXMLAdapter.class)
+	public DefinedType getConfigurationType() {
+		return configurationType;
+	}
+	public void setConfigurationType(DefinedType configurationType) {
+		this.configurationType = configurationType;
+	}
 }

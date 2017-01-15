@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import be.nabu.eai.module.web.application.WebApplication;
 import be.nabu.eai.module.web.application.WebFragment;
+import be.nabu.eai.module.web.application.WebFragmentConfiguration;
 import be.nabu.eai.module.web.websockets.api.WebSocketConnectionListener;
 import be.nabu.eai.repository.api.Repository;
 import be.nabu.eai.repository.artifacts.jaxb.JAXBArtifact;
@@ -36,6 +37,8 @@ import be.nabu.libs.nio.api.StandardizedMessagePipeline;
 import be.nabu.libs.nio.api.events.ConnectionEvent;
 import be.nabu.libs.resources.api.ResourceContainer;
 import be.nabu.libs.services.pojo.POJOUtils;
+import be.nabu.libs.types.api.ComplexType;
+import be.nabu.libs.types.api.DefinedType;
 import be.nabu.libs.types.api.KeyValuePair;
 import be.nabu.libs.types.utils.KeyValuePairImpl;
 
@@ -83,11 +86,22 @@ public class WebSocketProvider extends JAXBArtifact<WebSocketConfiguration> impl
 			subscription.filter(httpFilter);
 			subscriptions.get(key).add(subscription);
 			
+			// get the configuration for this web socket provider (if any)
+			DefinedType configurationType = getConfig().getConfigurationType();
+			String configurationPath = path == null ? "/" : path;
+			if (!configurationPath.endsWith("/")) {
+				configurationPath += "/";
+			}
+			configurationPath += path;
+			final Object configuration = configurationType == null 
+				? null 
+				: application.getConfigurationFor(configurationPath, (ComplexType) configurationType);
+			
 			// create the websocket listener
 			be.nabu.libs.http.server.websockets.util.PathFilter websocketFilter = isRegex
 				? new be.nabu.libs.http.server.websockets.util.PathFilter(analysis.getRegex(), true, true)
 				: new be.nabu.libs.http.server.websockets.util.PathFilter(artifactPath, false, true);
-			EventSubscription<WebSocketRequest, WebSocketMessage> websocketSubscription = application.getConfiguration().getVirtualHost().getDispatcher().subscribe(WebSocketRequest.class, new WebSocketListener(application, analysis, this));
+			EventSubscription<WebSocketRequest, WebSocketMessage> websocketSubscription = application.getConfiguration().getVirtualHost().getDispatcher().subscribe(WebSocketRequest.class, new WebSocketListener(application, analysis, this, configuration));
 			websocketSubscription.filter(websocketFilter);
 			subscriptions.get(key).add(websocketSubscription);
 			
@@ -121,7 +135,7 @@ public class WebSocketProvider extends JAXBArtifact<WebSocketConfiguration> impl
 									if (ConnectionEvent.ConnectionState.UPGRADED.equals(event.getState()) && getConfiguration().getConnectService() != null) {
 										Token token = WebSocketUtils.getToken((StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage>) event.getPipeline());
 										try {
-											connectionListener.connected(application.getId(), parserFactory.getPath(), token, host, port, values);
+											connectionListener.connected(application.getId(), parserFactory.getPath(), token, host, port, values, configuration);
 										}
 										catch (Exception e) {
 											event.getPipeline().close();
@@ -130,7 +144,7 @@ public class WebSocketProvider extends JAXBArtifact<WebSocketConfiguration> impl
 									// someone disconnected
 									else if (ConnectionEvent.ConnectionState.CLOSED.equals(event.getState()) && getConfiguration().getDisconnectService() != null) {
 										Token token = WebSocketUtils.getToken((StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage>) event.getPipeline());
-										connectionListener.disconnected(application.getId(), parserFactory.getPath(), token, host, port, values);
+										connectionListener.disconnected(application.getId(), parserFactory.getPath(), token, host, port, values, configuration);
 									}
 								}
 							}
@@ -171,4 +185,23 @@ public class WebSocketProvider extends JAXBArtifact<WebSocketConfiguration> impl
 		return subscriptions.containsKey(getKey(application, path));
 	}
 
+	@Override
+	public List<WebFragmentConfiguration> getFragmentConfiguration() {
+		List<WebFragmentConfiguration> configuration = new ArrayList<WebFragmentConfiguration>();
+		final String path = getConfig().getServerPath();
+		final DefinedType configurationType = getConfig().getConfigurationType();
+		if (configurationType != null) {
+			configuration.add(new WebFragmentConfiguration() {
+				@Override
+				public ComplexType getType() {
+					return (ComplexType) configurationType;
+				}
+				@Override
+				public String getPath() {
+					return path;
+				}
+			});
+		}
+		return configuration;
+	}
 }
