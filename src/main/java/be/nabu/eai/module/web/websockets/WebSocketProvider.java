@@ -18,12 +18,14 @@ import be.nabu.eai.module.web.websockets.api.WebSocketConnectionListener;
 import be.nabu.eai.repository.api.Repository;
 import be.nabu.eai.repository.artifacts.jaxb.JAXBArtifact;
 import be.nabu.eai.repository.util.SystemPrincipal;
+import be.nabu.libs.authentication.api.Device;
 import be.nabu.libs.authentication.api.Permission;
 import be.nabu.libs.authentication.api.Token;
 import be.nabu.libs.events.api.EventHandler;
 import be.nabu.libs.events.api.EventSubscription;
 import be.nabu.libs.http.api.HTTPRequest;
 import be.nabu.libs.http.api.HTTPResponse;
+import be.nabu.libs.http.glue.GlueDeviceResolver;
 import be.nabu.libs.http.glue.GlueListener;
 import be.nabu.libs.http.glue.GlueListener.PathAnalysis;
 import be.nabu.libs.http.glue.GlueTokenResolver;
@@ -78,6 +80,7 @@ public class WebSocketProvider extends JAXBArtifact<WebSocketConfiguration> impl
 			WebSocketHandshakeHandler websocketHandshakeHandler = new WebSocketHandshakeHandler(application.getConfiguration().getVirtualHost().getDispatcher(), new MemoryMessageDataProvider(1024*1024*10), false);
 			websocketHandshakeHandler.setRequireUpgrade(true);
 			websocketHandshakeHandler.setTokenResolver(new GlueTokenResolver(application.getSessionProvider(), application.getRealm()));
+			websocketHandshakeHandler.setDeviceResolver(new GlueDeviceResolver(application.getRealm()));
 			// register it
 			be.nabu.libs.http.server.PathFilter httpFilter = isRegex
 				? new be.nabu.libs.http.server.PathFilter(analysis.getRegex(), true, true)
@@ -134,17 +137,20 @@ public class WebSocketProvider extends JAXBArtifact<WebSocketConfiguration> impl
 									// upgraded means we have an active websocket connection
 									if (ConnectionEvent.ConnectionState.UPGRADED.equals(event.getState()) && getConfiguration().getConnectService() != null) {
 										Token token = WebSocketUtils.getToken((StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage>) event.getPipeline());
+										Device device = WebSocketUtils.getDevice((StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage>) event.getPipeline());
 										try {
-											connectionListener.connected(application.getId(), parserFactory.getPath(), token, host, port, values, configuration);
+											connectionListener.connected(getId(), application.getId(), parserFactory.getPath(), token, device, host, port, values, configuration);
 										}
 										catch (Exception e) {
+											logger.error("Could not connect to: " + getId(), e);
 											event.getPipeline().close();
 										}
 									}
 									// someone disconnected
 									else if (ConnectionEvent.ConnectionState.CLOSED.equals(event.getState()) && getConfiguration().getDisconnectService() != null) {
 										Token token = WebSocketUtils.getToken((StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage>) event.getPipeline());
-										connectionListener.disconnected(application.getId(), parserFactory.getPath(), token, host, port, values, configuration);
+										Device device = WebSocketUtils.getDevice((StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage>) event.getPipeline());
+										connectionListener.disconnected(getId(), application.getId(), parserFactory.getPath(), token, device, host, port, values, configuration);
 									}
 								}
 							}

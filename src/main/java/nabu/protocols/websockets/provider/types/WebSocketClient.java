@@ -5,6 +5,7 @@ import java.util.Date;
 import javax.validation.constraints.NotNull;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import be.nabu.libs.authentication.api.Device;
 import be.nabu.libs.authentication.api.Token;
 
 @XmlRootElement
@@ -13,15 +14,17 @@ public class WebSocketClient implements Comparable<WebSocketClient> {
 	private Integer port;
 	private Token token;
 	private Date created;
+	private Device device;
 	
 	public WebSocketClient() {
 		// auto construct
 	}
 	
-	public WebSocketClient(String host, Integer port, Token token, Date created) {
+	public WebSocketClient(String host, Integer port, Token token, Device device, Date created) {
 		this.host = host;
 		this.port = port;
 		this.token = token;
+		this.device = device;
 		this.created = created;
 	}
 
@@ -71,5 +74,14 @@ public class WebSocketClient implements Comparable<WebSocketClient> {
 			return created.compareTo(o.created);
 		}
 	}
+
+	public Device getDevice() {
+		return device;
+	}
+
+	public void setDevice(Device device) {
+		this.device = device;
+	}
+	
 
 }

@@ -11,6 +11,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import be.nabu.eai.module.web.application.WebApplication;
 import be.nabu.libs.authentication.api.Token;
 import be.nabu.libs.events.api.EventHandler;
@@ -37,6 +40,7 @@ public class WebSocketListener implements EventHandler<WebSocketRequest, WebSock
 	private WebSocketProvider provider;
 	private PathAnalysis analysis;
 	private Object configuration;
+	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	public WebSocketListener(WebApplication application, PathAnalysis analysis, WebSocketProvider provider, Object configuration) {
 		this.application = application;
@@ -86,9 +90,11 @@ public class WebSocketListener implements EventHandler<WebSocketRequest, WebSock
 				StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage> pipeline = WebSocketUtils.getPipeline();
 				if (pipeline != null) {
 					SocketAddress remoteSocketAddress = WebSocketUtils.getPipeline().getSourceContext().getSocketAddress();
+					content.set("webSocketId", provider.getId());
 					content.set("host", remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getHostString() : null);
 					content.set("port", remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getPort() : 0);
 					content.set("token", WebSocketUtils.getToken(pipeline));
+					content.set("device", WebSocketUtils.getDevice(pipeline));
 					content.set("webApplicationId", application.getId());
 					content.set("path", event.getPath());
 					content.set("configuration", configuration);
@@ -123,7 +129,7 @@ public class WebSocketListener implements EventHandler<WebSocketRequest, WebSock
 			return null;
 		}
 		catch (Exception e) {
-			e.printStackTrace();
+			logger.error("Could not process websocket message", e);
 			throw new RuntimeException(e);
 		}
 	}

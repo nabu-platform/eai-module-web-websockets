@@ -16,6 +16,7 @@ import javax.validation.constraints.NotNull;
 
 import nabu.protocols.websockets.provider.types.WebSocketClient;
 import be.nabu.eai.module.web.application.WebApplication;
+import be.nabu.libs.authentication.api.Device;
 import be.nabu.libs.authentication.api.Token;
 import be.nabu.libs.http.api.server.HTTPServer;
 import be.nabu.libs.http.server.websockets.WebSocketUtils;
@@ -35,9 +36,9 @@ public class Services {
 	
 	private ExecutionContext executionContext;
 	
-	private boolean matches(WebApplication artifact, StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage> pipeline, List<String> users, List<String> roles, List<WebSocketClient> clients) throws IOException {
+	private boolean matches(WebApplication artifact, StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage> pipeline, List<String> users, List<String> roles, List<String> devices, List<WebSocketClient> clients, List<String> notUsers, List<String> notRoles, List<String> notDevices) throws IOException {
 		// we want to target users/roles
-		if ((users != null && !users.isEmpty()) || (roles != null && !roles.isEmpty()) || (clients != null && !clients.isEmpty())) {
+		if ((users != null && !users.isEmpty()) || (roles != null && !roles.isEmpty()) || (clients != null && !clients.isEmpty()) || (notUsers != null && !notUsers.isEmpty()) || (notRoles != null && !notRoles.isEmpty()) || (notDevices != null && !notDevices.isEmpty())) {
 			Token token = WebSocketUtils.getToken(pipeline);
 			if (artifact.getTokenValidator() != null && !artifact.getTokenValidator().isValid(token)) {
 				token = null;
@@ -57,8 +58,34 @@ public class Services {
 					return false;
 				}
 			}
+			if (notRoles != null && !notRoles.isEmpty()) {
+				if (artifact.getRoleHandler() == null) {
+					throw new IllegalStateException("Role filtering requested but the web application '" + artifact.getId() + "' does not have a role handler");
+				}
+				for (String role : notRoles) {
+					if (artifact.getRoleHandler().hasRole(token, role)) {
+						return false;
+					}
+				}
+			}
 			if (users != null && !users.isEmpty()) {
 				if (token == null || !users.contains(token.getName())) {
+					return false;
+				}
+			}
+			if (notUsers != null && !notUsers.isEmpty()) {
+				if (token != null && notUsers.contains(token.getName())) {
+					return false;
+				}
+			}
+			Device device = WebSocketUtils.getDevice(pipeline);
+			if (devices != null && !devices.isEmpty()) {
+				if (device == null || !devices.contains(device.getDeviceId())) {
+					return false;
+				}
+			}
+			if (notDevices != null && !notDevices.isEmpty()) {
+				if (device != null && notDevices.contains(device.getDeviceId())) {
 					return false;
 				}
 			}
@@ -84,12 +111,15 @@ public class Services {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public void broadcast(@WebParam(name = "webApplicationId") @NotNull String webApplicationId, @WebParam(name = "path") String path, @WebParam(name = "object") @NotNull Object content, @WebParam(name = "users") List<String> users, @WebParam(name = "roles") List<String> roles, @WebParam(name = "clients") List<WebSocketClient> clients) throws IOException {
+	@WebResult(name = "clients")
+	public List<WebSocketClient> broadcast(@WebParam(name = "webApplicationId") @NotNull String webApplicationId, @WebParam(name = "path") String path, @WebParam(name = "object") @NotNull Object content, @WebParam(name = "users") List<String> users, @WebParam(name = "roles") List<String> roles, @WebParam(name = "devices") List<String> devices, @WebParam(name = "clients") List<WebSocketClient> clients, @WebParam(name = "notUsers") List<String> notUsers, @WebParam(name = "notRoles") List<String> notRoles, @WebParam(name = "notDevices") List<String> notDevices) throws IOException {
 		WebApplication artifact = executionContext.getServiceContext().getResolver(WebApplication.class).resolve(webApplicationId);
 		HTTPServer server = artifact.getConfiguration().getVirtualHost().getConfiguration().getServer().getServer();
 		byte [] bytes = null;
+		// we want to return a list of clients that we delivered the message to
+		List<WebSocketClient> resultingClients = new ArrayList<WebSocketClient>();
 		for (StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage> pipeline : WebSocketUtils.getWebsocketPipelines((NIOServer) server, path)) {
-			if (!matches(artifact, pipeline, users, roles, clients)) {
+			if (!matches(artifact, pipeline, users, roles, devices, clients, notUsers, notRoles, notDevices)) {
 				continue;
 			}
 			if (bytes == null) {
@@ -110,7 +140,17 @@ public class Services {
 			pipeline.getResponseQueue().add(
 				WebSocketUtils.newMessage(OpCode.TEXT, true, bytes.length, IOUtils.wrap(bytes, true))	
 			);
+			
+			WebSocketClient client = new WebSocketClient();
+			client.setToken(WebSocketUtils.getToken(pipeline));
+			client.setDevice(WebSocketUtils.getDevice(pipeline));
+			SocketAddress remoteSocketAddress = pipeline.getSourceContext().getSocketAddress();
+			client.setHost(remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getHostString() : null);
+			client.setPort(remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getPort() : 0);
+			client.setCreated(pipeline.getSourceContext().getCreated());
+			resultingClients.add(client);
 		}
+		return resultingClients;
 	}
 	
 	@WebResult(name = "clients")
@@ -121,6 +161,7 @@ public class Services {
 		for (StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage> pipeline : WebSocketUtils.getWebsocketPipelines((NIOServer) server, path)) {
 			WebSocketClient client = new WebSocketClient();
 			client.setToken(WebSocketUtils.getToken(pipeline));
+			client.setDevice(WebSocketUtils.getDevice(pipeline));
 			SocketAddress remoteSocketAddress = pipeline.getSourceContext().getSocketAddress();
 			client.setHost(remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getHostString() : null);
 			client.setPort(remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getPort() : 0);
@@ -131,11 +172,11 @@ public class Services {
 		return clients;
 	}
 	
-	public void disconnect(@WebParam(name = "webApplicationId") @NotNull String webApplicationId, @WebParam(name = "path") String path, @WebParam(name = "users") List<String> users, @WebParam(name = "roles") List<String> roles, @WebParam(name = "clients") List<WebSocketClient> clients) throws IOException {
+	public void disconnect(@WebParam(name = "webApplicationId") @NotNull String webApplicationId, @WebParam(name = "path") String path, @WebParam(name = "users") List<String> users, @WebParam(name = "roles") List<String> roles, @WebParam(name = "devices") List<String> devices, @WebParam(name = "clients") List<WebSocketClient> clients, @WebParam(name = "notUsers") List<String> notUsers, @WebParam(name = "notRoles") List<String> notRoles, @WebParam(name = "notDevices") List<String> notDevices) throws IOException {
 		WebApplication artifact = executionContext.getServiceContext().getResolver(WebApplication.class).resolve(webApplicationId);
 		HTTPServer server = artifact.getConfiguration().getVirtualHost().getConfiguration().getServer().getServer();
 		for (StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage> pipeline : WebSocketUtils.getWebsocketPipelines((NIOServer) server, path)) {
-			if (!matches(artifact, pipeline, users, roles, clients)) {
+			if (!matches(artifact, pipeline, users, roles, devices, clients, notUsers, notRoles, notDevices)) {
 				continue;
 			}
 			try {
