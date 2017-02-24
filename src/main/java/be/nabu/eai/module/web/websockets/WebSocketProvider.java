@@ -18,6 +18,7 @@ import be.nabu.eai.module.web.websockets.api.WebSocketConnectionListener;
 import be.nabu.eai.repository.api.Repository;
 import be.nabu.eai.repository.artifacts.jaxb.JAXBArtifact;
 import be.nabu.eai.repository.util.SystemPrincipal;
+import be.nabu.libs.artifacts.api.StoppableArtifact;
 import be.nabu.libs.authentication.api.Device;
 import be.nabu.libs.authentication.api.Permission;
 import be.nabu.libs.authentication.api.Token;
@@ -46,7 +47,7 @@ import be.nabu.libs.types.utils.KeyValuePairImpl;
 
 // TODO: add ability to validate role/permission of user before connection
 // TODO: add hooks for new connections & stopped connections (can update state)
-public class WebSocketProvider extends JAXBArtifact<WebSocketConfiguration> implements WebFragment {
+public class WebSocketProvider extends JAXBArtifact<WebSocketConfiguration> implements WebFragment, StoppableArtifact {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 	private Map<String, List<EventSubscription<?, ?>>> subscriptions = new HashMap<String, List<EventSubscription<?, ?>>>();
@@ -209,5 +210,15 @@ public class WebSocketProvider extends JAXBArtifact<WebSocketConfiguration> impl
 			});
 		}
 		return configuration;
+	}
+
+	@Override
+	public void stop() throws IOException {
+		for (List<EventSubscription<?, ?>> subscriptions : this.subscriptions.values()) {
+			for (EventSubscription<?, ?> subscription : subscriptions) {
+				subscription.unsubscribe();
+			}
+		}
+		subscriptions.clear();
 	}
 }
