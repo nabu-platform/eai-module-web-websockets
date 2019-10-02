@@ -41,6 +41,7 @@ public class WebSocketListener implements EventHandler<WebSocketRequest, WebSock
 	private PathAnalysis analysis;
 	private Object configuration;
 	private Logger logger = LoggerFactory.getLogger(getClass());
+	private boolean debugWebSockets = Boolean.parseBoolean(System.getProperty("websocket.debug", "false"));
 
 	public WebSocketListener(WebApplication application, PathAnalysis analysis, WebSocketProvider provider, Object configuration) {
 		this.application = application;
@@ -83,7 +84,13 @@ public class WebSocketListener implements EventHandler<WebSocketRequest, WebSock
 				}
 			}
 			if (content == null) {
-				throw new RuntimeException("Could not unmarshal the incoming data");
+				if (debugWebSockets) {
+					byte[] bytes = IOUtils.toBytes(IOUtils.wrap(event.getData()));
+					throw new RuntimeException("Could not unmarshal the incoming data: " + new String(bytes));
+				}
+				else {
+					throw new RuntimeException("Could not unmarshal the incoming data");
+				}
 			}
 			// fill in the default fields
 			else {

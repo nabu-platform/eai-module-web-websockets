@@ -66,7 +66,8 @@ public class WebSocketProvider extends JAXBArtifact<WebSocketConfiguration> impl
 		if (subscriptions.containsKey(key)) {
 			stop(application, path);
 		}
-		String artifactPath = application.getConfiguration().getPath() == null || application.getConfiguration().getPath().isEmpty() ? "/" : application.getConfiguration().getPath();
+		String artifactPath = path == null ? "" : path;
+//		String artifactPath = application.getConfiguration().getPath() == null || application.getConfiguration().getPath().isEmpty() ? "/" : application.getConfiguration().getPath();
 		if (artifactPath.endsWith("/")) {
 			artifactPath = artifactPath.substring(0, artifactPath.length() - 1);
 		}
@@ -140,7 +141,10 @@ public class WebSocketProvider extends JAXBArtifact<WebSocketConfiguration> impl
 										Token token = WebSocketUtils.getToken((StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage>) event.getPipeline());
 										Device device = WebSocketUtils.getDevice((StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage>) event.getPipeline());
 										try {
-											connectionListener.connected(getId(), application.getId(), parserFactory.getPath(), token, device, host, port, values, configuration);
+											Boolean denied = connectionListener.connected(getId(), application.getId(), parserFactory.getPath(), token, device, host, port, values, configuration);
+											if (denied != null && denied) {
+												event.getPipeline().close();
+											}
 										}
 										catch (Exception e) {
 											logger.error("Could not connect to: " + getId(), e);
