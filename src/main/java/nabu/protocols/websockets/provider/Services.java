@@ -129,6 +129,9 @@ public class Services {
 				else if (content instanceof InputStream) {
 					bytes = IOUtils.toBytes(IOUtils.wrap((InputStream) content));
 				}
+				else if (content instanceof String) {
+					bytes = content.toString().getBytes("UTF-8");
+				}
 				else {
 					ComplexContent complexContent = content instanceof ComplexContent ? (ComplexContent) content : ComplexContentWrapperFactory.getInstance().getWrapper().wrap(content);
 					JSONBinding binding = new JSONBinding(complexContent.getType());
