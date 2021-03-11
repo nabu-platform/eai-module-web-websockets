@@ -17,13 +17,19 @@ import org.slf4j.LoggerFactory;
 import be.nabu.eai.module.web.application.WebApplication;
 import be.nabu.libs.authentication.api.Token;
 import be.nabu.libs.events.api.EventHandler;
+import be.nabu.libs.events.api.EventTarget;
 import be.nabu.libs.http.glue.GlueListener.PathAnalysis;
 import be.nabu.libs.http.server.websockets.WebSocketUtils;
 import be.nabu.libs.http.server.websockets.api.OpCode;
 import be.nabu.libs.http.server.websockets.api.WebSocketMessage;
 import be.nabu.libs.http.server.websockets.api.WebSocketRequest;
+import be.nabu.libs.metrics.api.MetricInstance;
 import be.nabu.libs.nio.api.StandardizedMessagePipeline;
+import be.nabu.libs.services.api.ExecutionContext;
+import be.nabu.libs.services.api.SecurityContext;
+import be.nabu.libs.services.api.ServiceContext;
 import be.nabu.libs.services.api.ServiceResult;
+import be.nabu.libs.services.api.TransactionContext;
 import be.nabu.libs.types.api.ComplexContent;
 import be.nabu.libs.types.api.ComplexType;
 import be.nabu.libs.types.api.Element;
@@ -98,6 +104,7 @@ public class WebSocketListener implements EventHandler<WebSocketRequest, WebSock
 				if (pipeline != null) {
 					SocketAddress remoteSocketAddress = WebSocketUtils.getPipeline().getSourceContext().getSocketAddress();
 					content.set("webSocketId", provider.getId());
+					content.set("ip", remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getAddress().getHostAddress() : null);
 					content.set("host", remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getHostString() : null);
 					content.set("port", remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getPort() : 0);
 					content.set("token", WebSocketUtils.getToken(pipeline));
@@ -116,9 +123,38 @@ public class WebSocketListener implements EventHandler<WebSocketRequest, WebSock
 				}
 			}
 			Token token = WebSocketUtils.getToken(WebSocketUtils.getPipeline());
+			ExecutionContext executionContext = provider.getRepository().newExecutionContext(token);
 			Future<ServiceResult> run = provider.getRepository().getServiceRunner().run(
 				provider.getConfiguration().getMessageService(), 
-				provider.getRepository().newExecutionContext(token), 
+				new ExecutionContext() {
+					@Override
+					public MetricInstance getMetricInstance(String id) {
+						return executionContext.getMetricInstance(id);
+					}
+					@Override
+					public boolean isDebug() {
+						return executionContext.isDebug();
+					}
+					@Override
+					public TransactionContext getTransactionContext() {
+						return executionContext.getTransactionContext();
+					}
+					@Override
+					public ServiceContext getServiceContext() {
+						return executionContext.getServiceContext();
+					}
+					@Override
+					public SecurityContext getSecurityContext() {
+						return executionContext.getSecurityContext();
+					}
+					@Override
+					public EventTarget getEventTarget() {
+						// we explicitly do not send an event target
+						// websockets are meant for high volume message transfers, having the "message" service show up as a root service event entry every time generates a _lot_ of logs
+						// if (in the future) we do want _some_ events to pass, we can update the serviceruntime to recognize some setting so it does not log certain root services
+						return null;
+					}
+				}, 
 				content 
 			);
 			ServiceResult serviceResult = run.get();

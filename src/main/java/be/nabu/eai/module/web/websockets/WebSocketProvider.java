@@ -66,7 +66,13 @@ public class WebSocketProvider extends JAXBArtifact<WebSocketConfiguration> impl
 		if (subscriptions.containsKey(key)) {
 			stop(application, path);
 		}
-		String artifactPath = path == null ? "" : path;
+		String artifactPath = application.getServerPath();
+		if (path != null && !path.isEmpty() && !path.equals("/")) {
+			if (!artifactPath.endsWith("/")) {
+				artifactPath += "/";
+			}
+			artifactPath += path.replaceFirst("^[/]+", "");
+		}
 //		String artifactPath = application.getConfiguration().getPath() == null || application.getConfiguration().getPath().isEmpty() ? "/" : application.getConfiguration().getPath();
 		if (artifactPath.endsWith("/")) {
 			artifactPath = artifactPath.substring(0, artifactPath.length() - 1);
@@ -135,13 +141,14 @@ public class WebSocketProvider extends JAXBArtifact<WebSocketConfiguration> impl
 									}
 									SocketAddress remoteSocketAddress = event.getPipeline().getSourceContext().getSocketAddress();
 									String host = remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getHostString() : null;
+									String ip = remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getAddress().getHostAddress() : host;
 									int port = remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getPort() : 0;
 									// upgraded means we have an active websocket connection
 									if (ConnectionEvent.ConnectionState.UPGRADED.equals(event.getState()) && getConfiguration().getConnectService() != null) {
 										Token token = WebSocketUtils.getToken((StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage>) event.getPipeline());
 										Device device = WebSocketUtils.getDevice((StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage>) event.getPipeline());
 										try {
-											Boolean denied = connectionListener.connected(getId(), application.getId(), parserFactory.getPath(), token, device, host, port, values, configuration);
+											Boolean denied = connectionListener.connected(getId(), application.getId(), parserFactory.getPath(), token, device, ip, host, port, values, configuration);
 											if (denied != null && denied) {
 												event.getPipeline().close();
 											}
@@ -155,7 +162,7 @@ public class WebSocketProvider extends JAXBArtifact<WebSocketConfiguration> impl
 									else if (ConnectionEvent.ConnectionState.CLOSED.equals(event.getState()) && getConfiguration().getDisconnectService() != null) {
 										Token token = WebSocketUtils.getToken((StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage>) event.getPipeline());
 										Device device = WebSocketUtils.getDevice((StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage>) event.getPipeline());
-										connectionListener.disconnected(getId(), application.getId(), parserFactory.getPath(), token, device, host, port, values, configuration);
+										connectionListener.disconnected(getId(), application.getId(), parserFactory.getPath(), token, device, ip, host, port, values, configuration);
 									}
 								}
 							}
