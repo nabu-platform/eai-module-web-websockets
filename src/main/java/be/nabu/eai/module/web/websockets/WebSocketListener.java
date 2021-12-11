@@ -24,6 +24,7 @@ import be.nabu.libs.http.server.websockets.api.OpCode;
 import be.nabu.libs.http.server.websockets.api.WebSocketMessage;
 import be.nabu.libs.http.server.websockets.api.WebSocketRequest;
 import be.nabu.libs.metrics.api.MetricInstance;
+import be.nabu.libs.nio.PipelineUtils;
 import be.nabu.libs.nio.api.StandardizedMessagePipeline;
 import be.nabu.libs.services.api.ExecutionContext;
 import be.nabu.libs.services.api.SecurityContext;
@@ -104,6 +105,7 @@ public class WebSocketListener implements EventHandler<WebSocketRequest, WebSock
 				if (pipeline != null) {
 					SocketAddress remoteSocketAddress = WebSocketUtils.getPipeline().getSourceContext().getSocketAddress();
 					content.set("webSocketId", provider.getId());
+					content.set("webSocketInstanceId", PipelineUtils.getPipelineId(pipeline));
 					content.set("ip", remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getAddress().getHostAddress() : null);
 					content.set("host", remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getHostString() : null);
 					content.set("port", remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getPort() : 0);

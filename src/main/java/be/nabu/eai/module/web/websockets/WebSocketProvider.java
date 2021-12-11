@@ -36,6 +36,7 @@ import be.nabu.libs.http.server.websockets.WebSocketUtils;
 import be.nabu.libs.http.server.websockets.api.WebSocketMessage;
 import be.nabu.libs.http.server.websockets.api.WebSocketRequest;
 import be.nabu.libs.http.server.websockets.impl.WebSocketRequestParserFactory;
+import be.nabu.libs.nio.PipelineUtils;
 import be.nabu.libs.nio.api.StandardizedMessagePipeline;
 import be.nabu.libs.nio.api.events.ConnectionEvent;
 import be.nabu.libs.resources.api.ResourceContainer;
@@ -148,7 +149,7 @@ public class WebSocketProvider extends JAXBArtifact<WebSocketConfiguration> impl
 										Token token = WebSocketUtils.getToken((StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage>) event.getPipeline());
 										Device device = WebSocketUtils.getDevice((StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage>) event.getPipeline());
 										try {
-											Boolean denied = connectionListener.connected(getId(), application.getId(), parserFactory.getPath(), token, device, ip, host, port, values, configuration);
+											Boolean denied = connectionListener.connected(getId(), PipelineUtils.getPipelineId(event.getPipeline()), application.getId(), parserFactory.getPath(), token, device, ip, host, port, values, configuration);
 											if (denied != null && denied) {
 												event.getPipeline().close();
 											}
@@ -162,7 +163,7 @@ public class WebSocketProvider extends JAXBArtifact<WebSocketConfiguration> impl
 									else if (ConnectionEvent.ConnectionState.CLOSED.equals(event.getState()) && getConfiguration().getDisconnectService() != null) {
 										Token token = WebSocketUtils.getToken((StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage>) event.getPipeline());
 										Device device = WebSocketUtils.getDevice((StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage>) event.getPipeline());
-										connectionListener.disconnected(getId(), application.getId(), parserFactory.getPath(), token, device, ip, host, port, values, configuration);
+										connectionListener.disconnected(getId(), PipelineUtils.getPipelineId(event.getPipeline()), application.getId(), parserFactory.getPath(), token, device, ip, host, port, values, configuration);
 									}
 								}
 							}
