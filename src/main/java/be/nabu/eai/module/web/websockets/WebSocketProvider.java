@@ -160,7 +160,7 @@ public class WebSocketProvider extends JAXBArtifact<WebSocketConfiguration> impl
 										}
 									}
 									// someone disconnected
-									else if (ConnectionEvent.ConnectionState.CLOSED.equals(event.getState()) && getConfiguration().getDisconnectService() != null) {
+									else if (ConnectionEvent.ConnectionState.BEFORE_CLOSE.equals(event.getState()) && getConfiguration().getDisconnectService() != null) {
 										Token token = WebSocketUtils.getToken((StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage>) event.getPipeline());
 										Device device = WebSocketUtils.getDevice((StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage>) event.getPipeline());
 										connectionListener.disconnected(getId(), PipelineUtils.getPipelineId(event.getPipeline()), application.getId(), parserFactory.getPath(), token, device, ip, host, port, values, configuration);
