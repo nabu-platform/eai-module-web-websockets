@@ -57,6 +57,21 @@ public class WebSocketListener implements EventHandler<WebSocketRequest, WebSock
 		this.configuration = configuration;
 	}
 
+	/**
+	 * @2022-02-04: this explanation is not entirely complete yet, it is unclear why the retries were attempting because websocket messages do not pass through the regular event handler (which does retries) but rather their own. this may need to be checked later
+	 * Apparently when closing a websocket connection, it is customary to send a FF00 message with no payload because a TCP close might take a while to propagate (source lost, was on stack overflow)
+	 * We don't actually support specifically FF00 but this handler _will_ fail because it has no content (if content == null => throw)
+	 * This actually means the browser client "intends" to close the websocket connection, sends an FF00 message (the actual connection is still alive at that point)
+	 * The proxy forwards it to the final server, he does not recognize the FF00 nor require a content, it just forwards
+	 * The final server wants to parse the message, it will fail because of the throw and the server will close the connection _before_ the client actually closes the TCP connection
+	 * So it more or less works as intended though it is a very weird system.
+	 * Because of this too, the proxy can get an early exception back because the connection is closed before it expects it to be closed, for a long time, this would trigger the retry attempt in the proxy _after_ the connection close had already been played out.
+	 * So basically:
+	 * - client sends message FF00, we see this as attempt 0, the same http client that has been in use at that point was used
+	 * - this triggers an error on the server, which closes the connection, triggering a close routine on the proxy which in turn closes (and clears out) the http client. From the proxy perspective the pipeline is closed
+	 * - because we got an exception, we go into the catch of the proxy and retry attempt saw a non-existing http client, started one up again
+	 * The end result is that the nio http client at the proxy level was originally closed after attempt 0 which triggered the close, then at attempt 1 and 2, a new nio client was created that was _never_ destroyed! this led to nio clients building up
+	 */
 	@Override
 	public WebSocketMessage handle(WebSocketRequest event) {
 		// we try to parse the incoming request
