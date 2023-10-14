@@ -127,7 +127,7 @@ public class WebSocketProvider extends JAXBArtifact<WebSocketConfiguration> impl
 				) : null;
 				// listen to connect/disconnect events
 				final String pathToListen = artifactPath;
-				EventSubscription<ConnectionEvent, Void> connectionSubscription = application.getConfiguration().getVirtualHost().getConfiguration().getServer().getServer().getDispatcher().subscribe(ConnectionEvent.class, new EventHandler<ConnectionEvent, Void>() {
+				EventSubscription<ConnectionEvent, Void> connectionSubscription = application.getConfiguration().getVirtualHost().getServer().getServer().getDispatcher().subscribe(ConnectionEvent.class, new EventHandler<ConnectionEvent, Void>() {
 					@SuppressWarnings("unchecked")
 					@Override
 					public Void handle(ConnectionEvent event) {
