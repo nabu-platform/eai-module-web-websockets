@@ -121,7 +121,7 @@ public class Services {
 	@WebResult(name = "clients")
 	public List<WebSocketClient> broadcast(@WebParam(name = "webApplicationId") @NotNull String webApplicationId, @WebParam(name = "path") String path, @WebParam(name = "object") @NotNull Object content, @WebParam(name = "users") List<String> users, @WebParam(name = "roles") List<String> roles, @WebParam(name = "devices") List<String> devices, @WebParam(name = "clients") List<WebSocketClient> clients, @WebParam(name = "webSocketInstanceIds") List<String> webSocketInstanceIds, @WebParam(name = "notUsers") List<String> notUsers, @WebParam(name = "notRoles") List<String> notRoles, @WebParam(name = "notDevices") List<String> notDevices) throws IOException {
 		WebApplication artifact = executionContext.getServiceContext().getResolver(WebApplication.class).resolve(webApplicationId);
-		HTTPServer server = artifact.getConfiguration().getVirtualHost().getConfiguration().getServer().getServer();
+		HTTPServer server = artifact.getConfiguration().getVirtualHost().getServer().getServer();
 		byte [] bytes = null;
 		// we want to return a list of clients that we delivered the message to
 		List<WebSocketClient> resultingClients = new ArrayList<WebSocketClient>();
@@ -167,7 +167,7 @@ public class Services {
 	public List<WebSocketClient> clients(@WebParam(name = "webApplicationId") @NotNull String webApplicationId, @WebParam(name = "path") String path) throws IOException {
 		WebApplication artifact = executionContext.getServiceContext().getResolver(WebApplication.class).resolve(webApplicationId);
 		List<WebSocketClient> clients = new ArrayList<WebSocketClient>();
-		HTTPServer server = artifact.getConfiguration().getVirtualHost().getConfiguration().getServer().getServer();
+		HTTPServer server = artifact.getConfiguration().getVirtualHost().getServer().getServer();
 		for (StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage> pipeline : WebSocketUtils.getWebsocketPipelines((NIOServer) server, path)) {
 			WebSocketClient client = new WebSocketClient();
 			client.setToken(WebSocketUtils.getToken(pipeline));
@@ -184,7 +184,7 @@ public class Services {
 	
 	public void disconnect(@WebParam(name = "webApplicationId") @NotNull String webApplicationId, @WebParam(name = "path") String path, @WebParam(name = "users") List<String> users, @WebParam(name = "roles") List<String> roles, @WebParam(name = "devices") List<String> devices, @WebParam(name = "clients") List<WebSocketClient> clients, @WebParam(name = "webSocketInstanceIds") List<String> webSocketInstanceIds, @WebParam(name = "notUsers") List<String> notUsers, @WebParam(name = "notRoles") List<String> notRoles, @WebParam(name = "notDevices") List<String> notDevices) throws IOException {
 		WebApplication artifact = executionContext.getServiceContext().getResolver(WebApplication.class).resolve(webApplicationId);
-		HTTPServer server = artifact.getConfiguration().getVirtualHost().getConfiguration().getServer().getServer();
+		HTTPServer server = artifact.getConfiguration().getVirtualHost().getServer().getServer();
 		for (StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage> pipeline : WebSocketUtils.getWebsocketPipelines((NIOServer) server, path)) {
 			if (!matches(artifact, pipeline, users, roles, devices, clients, notUsers, notRoles, notDevices, webSocketInstanceIds)) {
 				continue;
@@ -200,7 +200,7 @@ public class Services {
 	
 	public void setContext(@WebParam(name = "webApplicationId") @NotNull String webApplicationId, @WebParam(name = "path") String path, @NotNull @WebParam(name = "webSocketInstanceId") String webSocketInstanceId, @NotNull @WebParam(name = "key") String key, @WebParam(name = "value") Object value) {
 		WebApplication artifact = executionContext.getServiceContext().getResolver(WebApplication.class).resolve(webApplicationId);
-		HTTPServer server = artifact.getConfig().getVirtualHost().getConfig().getServer().getServer();
+		HTTPServer server = artifact.getConfig().getVirtualHost().getServer().getServer();
 		for (StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage> pipeline : WebSocketUtils.getWebsocketPipelines((NIOServer) server, path)) {
 			if (webSocketInstanceId.equals(PipelineUtils.getPipelineId(pipeline))) {
 				if (value == null) {
@@ -216,7 +216,7 @@ public class Services {
 	@WebResult(name = "value")
 	public Object getContext(@WebParam(name = "webApplicationId") @NotNull String webApplicationId, @WebParam(name = "path") String path, @NotNull @WebParam(name = "webSocketInstanceId") String webSocketInstanceId, @NotNull @WebParam(name = "key") String key) {
 		WebApplication artifact = executionContext.getServiceContext().getResolver(WebApplication.class).resolve(webApplicationId);
-		HTTPServer server = artifact.getConfig().getVirtualHost().getConfig().getServer().getServer();
+		HTTPServer server = artifact.getConfig().getVirtualHost().getServer().getServer();
 		for (StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage> pipeline : WebSocketUtils.getWebsocketPipelines((NIOServer) server, path)) {
 			if (webSocketInstanceId.equals(PipelineUtils.getPipelineId(pipeline))) {
 				return pipeline.getContext().get(key);
