@@ -15,6 +15,8 @@ public class WebSocketClient implements Comparable<WebSocketClient> {
 	private Token token;
 	private Date created;
 	private Device device;
+	private String pipelineId;
+	private String path;
 	
 	public WebSocketClient() {
 		// auto construct
@@ -82,6 +84,21 @@ public class WebSocketClient implements Comparable<WebSocketClient> {
 	public void setDevice(Device device) {
 		this.device = device;
 	}
-	
+
+	public String getPipelineId() {
+		return pipelineId;
+	}
+
+	public void setPipelineId(String pipelineId) {
+		this.pipelineId = pipelineId;
+	}
+
+	public String getPath() {
+		return path;
+	}
+
+	public void setPath(String path) {
+		this.path = path;
+	}
 
 }

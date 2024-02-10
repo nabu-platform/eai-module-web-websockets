@@ -23,7 +23,9 @@ import be.nabu.libs.http.server.websockets.WebSocketUtils;
 import be.nabu.libs.http.server.websockets.api.OpCode;
 import be.nabu.libs.http.server.websockets.api.WebSocketMessage;
 import be.nabu.libs.http.server.websockets.api.WebSocketRequest;
+import be.nabu.libs.http.server.websockets.impl.WebSocketRequestParserFactory;
 import be.nabu.libs.nio.PipelineUtils;
+import be.nabu.libs.nio.api.MessageParserFactory;
 import be.nabu.libs.nio.api.NIOServer;
 import be.nabu.libs.nio.api.StandardizedMessagePipeline;
 import be.nabu.libs.services.api.ExecutionContext;
@@ -176,6 +178,11 @@ public class Services {
 			client.setHost(remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getHostString() : null);
 			client.setPort(remoteSocketAddress instanceof InetSocketAddress ? ((InetSocketAddress) remoteSocketAddress).getPort() : 0);
 			client.setCreated(pipeline.getSourceContext().getCreated());
+			client.setPipelineId(PipelineUtils.getPipelineId(pipeline));
+			MessageParserFactory<?> requestParserFactory = ((StandardizedMessagePipeline<?, ?>) pipeline).getRequestParserFactory();
+			if (requestParserFactory instanceof WebSocketRequestParserFactory) {
+				client.setPath(((WebSocketRequestParserFactory) requestParserFactory).getPath());
+			}
 			clients.add(client);
 		}
 		Collections.sort(clients);
@@ -223,5 +230,25 @@ public class Services {
 			}
 		}
 		return null;
+	}
+	
+	public void authenticate(@WebParam(name = "webApplicationId") @NotNull String webApplicationId, @WebParam(name = "path") String path, @NotNull @WebParam(name = "webSocketInstanceId") String webSocketInstanceId, @WebParam(name = "token") Token token) {
+		WebApplication artifact = executionContext.getServiceContext().getResolver(WebApplication.class).resolve(webApplicationId);
+		HTTPServer server = artifact.getConfig().getVirtualHost().getServer().getServer();
+		for (StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage> pipeline : WebSocketUtils.getWebsocketPipelines((NIOServer) server, path)) {
+			if (webSocketInstanceId.equals(PipelineUtils.getPipelineId(pipeline))) {
+				((WebSocketRequestParserFactory) pipeline.getRequestParserFactory()).setToken(token);
+			}
+		}
+	}
+	
+	public void ping(@WebParam(name = "webApplicationId") @NotNull String webApplicationId, @WebParam(name = "path") String path, @NotNull @WebParam(name = "webSocketInstanceId") String webSocketInstanceId) {
+		WebApplication artifact = executionContext.getServiceContext().getResolver(WebApplication.class).resolve(webApplicationId);
+		HTTPServer server = artifact.getConfig().getVirtualHost().getServer().getServer();
+		for (StandardizedMessagePipeline<WebSocketRequest, WebSocketMessage> pipeline : WebSocketUtils.getWebsocketPipelines((NIOServer) server, path)) {
+			if (webSocketInstanceId.equals(PipelineUtils.getPipelineId(pipeline))) {
+				WebSocketUtils.pingPong(pipeline);
+			}
+		}
 	}
 }
