@@ -50,17 +50,7 @@
 		</dependency>
 		<dependency>
 			<groupId>nabu</groupId>
-			<artifactId>eai-module-glue</artifactId>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>nabu</groupId>
 			<artifactId>eai-module-keystore</artifactId>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>nabu</groupId>
-			<artifactId>eai-module-authorization-vm</artifactId>
 			<scope>provided</scope>
 		</dependency>
 	</dependencies>
